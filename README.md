@@ -1,43 +1,150 @@
-# Astro Starter Kit: Minimal
+# Yuuvi
 
-```sh
-npm create astro@latest -- --template minimal
-```
+Revista digital de tendencias juveniles. Bilingüe (ES/EN), mobile-first, modo oscuro por defecto, optimizada para SEO y pensada para monetizar con Google AdSense.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Stack
 
-## 🚀 Project Structure
+- **Astro 7** (estático, SSG) — velocidad y SEO
+- **Tailwind CSS 4** — estilos con tema juvenil personalizado
+- **Content Collections + glob loader** — artículos en Markdown
+- **@astrojs/sitemap** — generación automática del sitemap
+- Despliegue: cualquier hosting estático (Cloudflare Pages, Netlify, Vercel)
 
-Inside of your Astro project, you'll see the following folders and files:
+## Estructura
 
 ```text
 /
-├── public/
+├── public/                # Estáticos (robots.txt, favicon)
 ├── src/
-│   └── pages/
-│       └── index.astro
+│   ├── assets/covers/     # Imágenes de portada
+│   ├── components/        # Header, Footer, BottomNav, ArticleCard, etc.
+│   ├── content/articles/  # Artículos en Markdown (es/ y en/)
+│   ├── layouts/           # Layout base con SEO
+│   ├── lib/               # Config del sitio, utilidades
+│   ├── pages/             # Rutas
+│   │   ├── index.astro          # Home ES
+│   │   ├── en/index.astro       # Home EN
+│   │   ├── [...lang]/categoria/[slug].astro  # Categorías
+│   │   └── [...slug].astro      # Artículo individual
+│   └── styles/global.css  # Tailwind + tema
 └── package.json
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Comandos
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+| Comando               | Acción                                 |
+| :-------------------- | :------------------------------------- |
+| `npm install`         | Instala dependencias                   |
+| `npm run dev`         | Dev server en `localhost:4321`         |
+| `npm run build`       | Build de producción a `./dist/`        |
+| `npm run preview`     | Previsualiza el build localmente       |
+| `astro dev --background` | Dev server en modo background        |
 
-Any static assets, like images, can be placed in the `public/` directory.
+## Crear un artículo
 
-## 🧞 Commands
+Copia un ejemplo en `src/content/articles/es/` o `en/` y edita el frontmatter:
 
-All commands are run from the root of the project, from a terminal:
+```md
+---
+title: "Título llamativo"
+description: "Resumen de 150-160 caracteres para SEO"
+lang: "es"
+pubDate: 2026-09-01
+category: "cultura | estetica | gaming | tecnologia | musica"
+tags: ["tag1", "tag2"]
+author: "Tu nombre"
+coverImage: "src/assets/covers/tu-imagen.png"
+coverAlt: "Descripción de la imagen"
+featured: true
+published: true
+---
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+Contenido del artículo en Markdown.
+```
 
-## 👀 Want to learn more?
+## SEO implementado
 
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+- Meta tags + Open Graph + Twitter Cards por página
+- Meta de artículo (`article:published_time`, `article:section`, `article:tag`, `article:author`)
+- Hreflang ES ⇄ EN + x-default
+- JSON-LD: `Article`, `BreadcrumbList`, `WebSite`, `Organization`
+- Sitemap XML automático
+- Robots.txt
+- Imágenes optimizadas a WebP con `width`/`height`
+- `loading="lazy"` en tarjetas, `eager` en el Hero
+- URL canónicas
+- Imagen Open Graph por defecto (`public/og-default.png`)
+
+## Monetización (Google AdSense + RGPD)
+
+Todo listo para AdSense. Configura en `src/lib/adsense.ts`:
+
+```ts
+export const ADSENSE = {
+  clientId: 'ca-pub-XXXXXXXXXXXXXXXX', // ID de tu cuenta AdSense
+  defaultSlot: '1234567890',          // ID del bloque de anuncios
+  ...
+};
+```
+
+Componentes incluidos:
+
+- **`AdSlot.astro`** — espacio publicitario (`<ins class="adsbygoogle">`) integrado en las grillas de inicio/categorías y tras la portada de los artículos. Sin configurar muestra un placeholder estético ("Publicidad"). Propagación de `window.adsbygoogle.push()`.
+- **`InlineAd.astro`** — inserta un anuncio **dentro del texto** del artículo (tras el 2º párrafo) vía DOM, manteniendo la estética del feed.
+- **`ConsentBanner.astro`** — banner RGPD con **Consent Mode v2** (`denied` por defecto → `granted` al aceptar). Almacena la decisión en `localStorage`, solo carga el script de AdSense si el usuario acepta (anuncios no personalizados en caso contrario). Aceptar / Rechazar / Más info.
+
+Legal incluido:
+
+- `/privacidad/` — política con tabla de cookies y base legal RGPD.
+- `/avisolegal/` — aviso legal con LSSI-CE.
+- `/terminos/` — términos de uso.
+- Enlaces en el footer.
+
+## Estrategia de contenido (target 13-22)
+
+La web está organizada en **5 pilares temáticos** que mapean lo que el público joven busca a diario. Esto construye autoridad tópica en Google y facilita la navegación.
+
+| # | Pilar | Slug | Qué cubre |
+|---|---|---|---|
+| 1 | Cultura de Internet y Lenguaje | `cultura` | Slang, memes, significados de los virales. **Tráfico rápido** |
+| 2 | Estéticas y "Cores" | `estetica` | Microtendencias de moda (Y2K, coquette...), outfits, dupes |
+| 3 | Gaming y Cultura Streamer | `gaming` | Juegos, guías rápidas, setups de streamers |
+| 4 | Tecnología, Apps e IA | `tecnologia` | Apps para estudiar, edición, trucos, IA para el día a día |
+| 5 | Música, Fandoms y entretenimiento | `musica` | Setlists, lanzamientos, fandoms, series |
+
+### Reglas de escritura (formato "snackable")
+
+- **Párrafos de máximo 2-3 líneas.** La audiencia escanea, no lee.
+- **Responder la keyword en el primer párrafo** (la respuesta corta en negrita).
+- **Listas (listicles) siempre que se pueda.**
+- **Negritas para lo importante**, emojis con moderación para acompañar.
+- **Bloques con el > (cita)** para la "respuesta corta".
+
+### Tabla de keywords de entrada (first articles)
+
+| Pilar | Keyword long-tail | Intención | Tipo de artículo |
+|---|---|---|---|
+| Cultura | qué significa [slang] en TikTok | Informativa directa | Diccionario rápido / explicación del meme |
+| Cultura | cómo hacer el trend de [canción] paso a paso | Tutorial | Guía con vídeos incrustados |
+| Estética | zapatillas que combinan con todo estilo [Y2K/streetwear] | Comercial / Inspiracional | Lista Top 10 con imágenes |
+| Estética | dónde comprar ropa estilo [core] barata | Transaccional (afiliación) | Guía de tiendas y dupes |
+| Gaming | mejores juegos de móvil para jugar con amigos a distancia | Descubrimiento | Lista por categorías (terror, risas, cooperativos) |
+| Gaming | qué setup usa [streamer] en 2026 | Informativa / Aspiracional | Desglose de componentes y accesorios |
+| Tecnología | mejores apps gratis para organizar apuntes | Solución de problemas | Reseña de herramientas y comparativas |
+| Música | posible setlist concierto [artista] España | Expectativa / Evento | Actualidad + playlist Spotify |
+
+### Artículos de ejemplo ya creados (ES)
+
+Cada uno demuestra el formato y ataca una keyword de la tabla:
+
+1. `que-significa-delulu-tiktok` → Cultura (diccionario de slang)
+2. `zapatillas-combinan-con-todo-y2k` → Estética (listicle Top 10)
+3. `mejores-juegos-movil-amigos-distancia` → Gaming (lista por categorías)
+4. `mejores-apps-gratis-apuntes` → Tecnología (comparativa)
+5. `setlist-concierto-espana` → Música (actualidad + estructura de show)
+
+## Siguientes fases
+
+- Registrar la web en Google Search Console + analytics
+- Despliegue (Cloudflare Pages/Netlify)
+- Publicación de AdSense y ajuste de bloques

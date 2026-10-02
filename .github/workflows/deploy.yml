@@ -1,0 +1,91 @@
+name: Deploy a Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  # Despliegue manual desde la pestaña Actions
+  workflow_dispatch:
+
+concurrency:
+  # Cancela despliegues anteriores si llega uno nuevo
+  group: pages-deploy
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Comprobar tipos
+        run: npm run check
+
+      - name: Comprobar contenido (caracteres corruptos, artículos cortos)
+        run: npm run check:content
+
+      - name: Publicar clave de IndexNow
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: |
+          if [ -n "$INDEXNOW_KEY" ]; then
+            echo "$INDEXNOW_KEY" > "public/${INDEXNOW_KEY}.txt"
+          else
+            echo "IndexNow desactivado: no hay secret INDEXNOW_KEY"
+          fi
+
+      - name: Build
+        run: npm run build
+
+      - name: Verificar SEO (canonical, hreflang, JSON-LD, enlaces)
+        run: npm run check:seo
+
+      - name: Subir artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Descargar artefacto
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Desplegar en Cloudflare Pages
+        id: deployment
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: yuuvi
+          directory: dist
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Avisar a los buscadores (IndexNow)
+        if: success()
+        env:
+          INDEXNOW_KEY: ${{ secrets.INDEXNOW_KEY }}
+        run: |
+          if [ -z "$INDEXNOW_KEY" ]; then
+            echo "IndexNow desactivado: se omite el aviso"
+            exit 0
+          fi
+          curl -sS -X POST https://api.indexnow.org/indexnow \
+            -H "Content-Type: application/json" \
+            -d "{\"host\":\"yuuvi.com\",\"key\":\"${INDEXNOW_KEY}\",\"keyLocation\":\"https://yuuvi.com/${INDEXNOW_KEY}.txt\",\"urlList\":[\"https://yuuvi.com/\",\"https://yuuvi.com/en/\",\"https://yuuvi.com/rss.xml\",\"https://yuuvi.com/en/rss.xml\"]}"

@@ -3,10 +3,35 @@
 When starting the dev server, use background mode:
 
 ```
-astro dev --background
+npx astro dev --background
 ```
 
-Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
+Manage the background server with `npx astro dev stop`, `npx astro dev status`, and `npx astro dev logs`.
+
+**Never install dependencies while the dev server is running.** An `npm install`
+can swap the Sharp binary on disk and leave the live process unable to load images
+(MissingSharp, every page 500). Always:
+
+```
+npx astro dev stop && npm install && npx astro dev --background
+```
+
+## Verifying changes
+
+```
+npm run check:all
+```
+
+Runs typecheck + build + SEO + content checks. The same command runs in CI and
+blocks the deploy, so run it before claiming any change is done.
+
+## Covers
+
+Covers live in `src/assets/covers/` and must be `.webp` at 1200x675, under 400 KB.
+Unsized originals go in `covers-originals/`, which is gitignored and outside
+`src/assets` on purpose, because the content check rejects anything heavier.
+`node scripts/alt-review.mjs && open _alt-review.html` shows every cover next to
+its current `coverAlt` for accessibility review.
 
 ## Documentation
 
